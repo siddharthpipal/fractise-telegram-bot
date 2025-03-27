@@ -22,7 +22,7 @@ async def handle_message(update: Update, context: CallbackContext):
     prompt = f"{FRACTISE_INFO}\n\nUser: {user_message}\nAI:"
 
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o",
         messages=[{"role": "system", "content": "You are an expert assistant for Fractise, a fractional ownership platform."},
                   {"role": "user", "content": prompt}]
     )
