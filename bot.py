@@ -1,68 +1,93 @@
-import logging
-import openai
 import os
+import logging
+import random
+import asyncio
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
+import openai
 
-# Load environment variables
-BOT_TOKEN = os.getenv("BOT_TOKEN")  # Your Telegram bot token
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Your OpenAI API key
+# === Configuration ===
+# Environment variables (set these in Railway)
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")  # This should be the group chat ID
 
-# Set OpenAI API Key
-openai.api_key = OPENAI_API_KEY
-
-# Enable logging
+# Configure logging to help with debugging and monitoring.
 logging.basicConfig(
-    format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO
+    format="%(asctime)s - %(levelname)s - %(message)s", 
+    level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
-# Start command
-async def start(update: Update, context: CallbackContext):
-    await update.message.reply_text("Hello! I'm the Fractise AI bot. Ask me anything about Fractise!")
+# Set the OpenAI API key
+openai.api_key = OPENAI_API_KEY
 
-# Help command
-async def help_command(update: Update, context: CallbackContext):
-    await update.message.reply_text("Just type a message, and I'll reply with an AI-generated response.")
+# === Command Handlers ===
+async def start(update: Update, context: CallbackContext) -> None:
+    """
+    Send a welcome message when a user sends the /start command.
+    """
+    await update.message.reply_text(
+        "Hello! I'm the Fractise AI Bot. Ask me anything about Fractise and I'll do my best to help!"
+    )
 
-# Generate AI response
-def get_ai_response(user_message):
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": user_message}],
-        )
-        return response["choices"][0]["message"]["content"]
-    except Exception as e:
-        logger.error(f"Error with OpenAI API: {e}")
-        return "Sorry, I couldn't process your request."
-
-# Handle messages
-async def handle_message(update: Update, context: CallbackContext):
+async def chat(update: Update, context: CallbackContext) -> None:
+    """
+    Process incoming text messages by sending the content to the OpenAI API and returning the generated response.
+    """
     user_message = update.message.text
-    chat_id = update.message.chat.id
+    try:
+        # Call the OpenAI API to generate a response
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an AI assistant for the Fractise project. Provide helpful and detailed answers."
+                },
+                {"role": "user", "content": user_message}
+            ]
+        )
+        bot_response = response["choices"][0]["message"]["content"]
+        await update.message.reply_text(bot_response)
+    except Exception as e:
+        logger.error(f"OpenAI API Error: {e}")
+        await update.message.reply_text("Sorry, I couldn't process your request at the moment.")
 
-    logger.info(f"Received message from {chat_id}: {user_message}")
+# === Scheduled Engagement Messages ===
+async def send_engagement_message(context: CallbackContext) -> None:
+    """
+    Periodically send engagement messages to the Fractise group to stimulate conversation.
+    """
+    messages = [
+        "🔥 Have you checked out the latest Fractise updates? Ask me anything!",
+        "💡 Did you know? Fractise enables fractional ownership of diverse asset types!",
+        "🚀 Join the discussion! How do you think blockchain can improve asset ownership?"
+    ]
+    message = random.choice(messages)
+    try:
+        await context.bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
+    except Exception as e:
+        logger.error(f"Failed to send engagement message: {e}")
 
-    # Generate AI response
-    ai_response = get_ai_response(user_message)
+# === Main Function to Run the Bot ===
+async def main():
+    """
+    Build and run the Telegram bot application.
+    """
+    # Build the application using the bot token
+    app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
-    # Send response
-    await update.message.reply_text(ai_response)
-
-# Error handler
-async def error(update: Update, context: CallbackContext):
-    logger.error(f"Update {update} caused error {context.error}")
-
-# Main function
-def main():
-    app = Application.builder().token(BOT_TOKEN).build()
-
+    # Add command and message handlers
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("help", help_command))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chat))
 
-    app.add_error_handler(error)
+    # Schedule the engagement messages to run every 6 hours (21600 seconds)
+    job_queue = app.job_queue
+    job_queue.run_repeating(send_engagement_message, interval=21600, first=10)
 
-    logger.info("Bot is running...")
-    app.run
+    logger.info("Fractise AI Bot is running 24/7...")
+    await app.run_polling()
+
+if __name__ == "__main__":
+    asyncio.run(main())
