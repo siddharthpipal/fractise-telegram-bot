@@ -12,7 +12,7 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")  # This should be the group chat ID
 
-# Configure logging to help with debugging and monitoring.
+# Configure logging for debugging purposes.
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s", 
     level=logging.INFO
@@ -37,7 +37,7 @@ async def chat(update: Update, context: CallbackContext) -> None:
     """
     user_message = update.message.text
     try:
-        # Call the OpenAI API to generate a response
+        # Call the OpenAI API to generate a response using GPT-4
         response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[
@@ -75,16 +75,20 @@ async def main():
     """
     Build and run the Telegram bot application.
     """
-    # Build the application using the bot token
+    # Build the application using the bot token.
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
-    # Add command and message handlers
+    # Add command and message handlers.
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chat))
 
-    # Schedule the engagement messages to run every 6 hours (21600 seconds)
-    job_queue = app.job_queue
-    job_queue.run_repeating(send_engagement_message, interval=21600, first=10)
+    # Access the JobQueue for scheduling periodic messages.
+    # Note: If job_queue is None, please ensure you've installed the job queue extra:
+    # pip install python-telegram-bot[job-queue]
+    if app.job_queue is None:
+        logger.error("JobQueue is not available. Please install with 'python-telegram-bot[job-queue]'.")
+    else:
+        app.job_queue.run_repeating(send_engagement_message, interval=21600, first=10)
 
     logger.info("Fractise AI Bot is running 24/7...")
     await app.run_polling()
