@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 # Load environment variables
 BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
-GROUP_CHAT_ID = os.getenv("GROUP_CHAT_ID", "0").strip()
+GROUP_CHAT_ID = -1002438785541
 
 # Validate GROUP_CHAT_ID
 try:
