@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import os
 from openai import OpenAI
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, filters, CallbackContext
@@ -7,10 +8,10 @@ from telegram.ext import ApplicationBuilder, MessageHandler, filters, CallbackCo
 # Logging setup
 logging.basicConfig(level=logging.INFO)
 
-# Replace these with your actual credentials
-BOT_TOKEN = "YOUR_BOT_TOKEN"
-OPENAI_API_KEY = "YOUR_OPENAI_API_KEY"
-GROUP_CHAT_ID = -1001234567890  # Replace with your group chat ID
+# Fetch credentials from Railway environment variables
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+GROUP_CHAT_ID = int(os.getenv("GROUP_CHAT_ID", "0"))  # Ensure it's an integer
 
 # Initialize OpenAI
 client = OpenAI(api_key=OPENAI_API_KEY)
@@ -41,12 +42,16 @@ async def handle_message(update: Update, context: CallbackContext):
 
 # Main function to run the bot
 def main():
+    if not BOT_TOKEN or not OPENAI_API_KEY or GROUP_CHAT_ID == 0:
+        logging.error("Missing environment variables! Please set BOT_TOKEN, OPENAI_API_KEY, and GROUP_CHAT_ID.")
+        return
+
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     # Add message handler
     app.add_handler(MessageHandler(filters.TEXT & filters.Chat(GROUP_CHAT_ID), handle_message))
 
-    logging.info("Bot is running...")
+    logging.info("FractiseBot is running on Railway...")
     app.run_polling()
 
 if __name__ == "__main__":
