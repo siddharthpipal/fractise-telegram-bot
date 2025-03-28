@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 
 # Load environment variables
 BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
+OPENAI_API_KEY = "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"
 GROUP_CHAT_ID = -1002438785541
 
 # Validate GROUP_CHAT_ID
