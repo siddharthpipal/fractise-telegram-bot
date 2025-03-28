@@ -11,6 +11,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
 GROUP_CHAT_ID = -1002438785541
+print("🔍 OpenAI API Key from env:", os.getenv("OPENAI_API_KEY"))
+
 
 # Validate GROUP_CHAT_ID
 try:
